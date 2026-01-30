@@ -1,0 +1,241 @@
+class PerformanceData {
+  final int score;
+  final String riskLevel;
+  final String trends;
+  final List<String> recommendations;
+  final int attendance;
+  final int internalMarks;
+
+  PerformanceData({
+    required this.score,
+    required this.riskLevel,
+    required this.trends,
+    required this.recommendations,
+    required this.attendance,
+    required this.internalMarks,
+  });
+
+  factory PerformanceData.fromJson(Map<String, dynamic> json) {
+    return PerformanceData(
+      score: json['score'] ?? 0,
+      riskLevel: json['riskLevel'] ?? 'Unknown',
+      trends: json['trends'] ?? 'Stable',
+      recommendations: List<String>.from(json['recommendations'] ?? []),
+      attendance: json['attendance'] ?? 0,
+      internalMarks: json['internalMarks'] ?? 0,
+    );
+  }
+}
+
+class RiskData {
+  final bool isAtRisk;
+  final String riskLevel;
+  final List<String> riskFactors;
+
+  RiskData({
+    required this.isAtRisk,
+    required this.riskLevel,
+    required this.riskFactors,
+  });
+
+  factory RiskData.fromJson(Map<String, dynamic> json) {
+    return RiskData(
+      isAtRisk: json['isAtRisk'] ?? false,
+      riskLevel: json['riskLevel'] ?? 'Unknown',
+      riskFactors: List<String>.from(json['riskFactors'] ?? []),
+    );
+  }
+}
+
+class ScoreBreakdown {
+  final int attendance;
+  final int internalMarks;
+  final int assignmentScore;
+  final int overallScore;
+  final int lmsEngagement;
+
+  ScoreBreakdown({
+    required this.attendance,
+    required this.internalMarks,
+    required this.assignmentScore,
+    required this.overallScore,
+    required this.lmsEngagement,
+  });
+
+  factory ScoreBreakdown.fromJson(Map<String, dynamic> json) {
+    return ScoreBreakdown(
+      attendance: json['attendance'] ?? 0,
+      internalMarks: json['internalMarks'] ?? 0,
+      assignmentScore: json['assignmentScore'] ?? 0,
+      overallScore: json['overallScore'] ?? 0,
+      lmsEngagement: json['lmsEngagement'] ?? 0,
+    );
+  }
+}
+
+class TrendsData {
+  final String trends;
+  final String analysisDate;
+  final int totalAnalyses;
+
+  TrendsData({
+    required this.trends,
+    required this.analysisDate,
+    required this.totalAnalyses,
+  });
+
+  factory TrendsData.fromJson(Map<String, dynamic> json) {
+    return TrendsData(
+      trends: json['trends'] ?? 'Unknown',
+      analysisDate: json['analysisDate'] ?? '',
+      totalAnalyses: json['totalAnalyses'] ?? 0,
+    );
+  }
+}
+
+class RecommendationsData {
+  final List<String> recommendations;
+  final List<String> strengths;
+  final List<String> concerns;
+
+  RecommendationsData({
+    required this.recommendations,
+    required this.strengths,
+    required this.concerns,
+  });
+
+  factory RecommendationsData.fromJson(Map<String, dynamic> json) {
+    return RecommendationsData(
+      recommendations: List<String>.from(json['recommendations'] ?? []),
+      strengths: List<String>.from(json['strengths'] ?? []),
+      concerns: List<String>.from(json['concerns'] ?? []),
+    );
+  }
+}
+
+class OverviewData {
+  final String riskLevel;
+  final int overallScore;
+  final int attendance;
+
+  OverviewData({
+    required this.riskLevel,
+    required this.overallScore,
+    required this.attendance,
+  });
+
+  factory OverviewData.fromJson(Map<String, dynamic> json) {
+    return OverviewData(
+      riskLevel: json['riskLevel'] ?? 'Unknown',
+      overallScore: json['overallScore'] ?? 0,
+      attendance: json['attendance'] ?? 0,
+    );
+  }
+}
+
+class LearningStep {
+  final String title;
+  final String description;
+  final String status; // 'completed', 'in-progress', 'locked'
+
+  LearningStep({
+    required this.title,
+    required this.description,
+    required this.status,
+  });
+
+  factory LearningStep.fromJson(Map<String, dynamic> json) {
+    return LearningStep(
+      title: json['title'] ?? 'Untitled Step',
+      description: json['description'] ?? '',
+      status: json['status'] ?? 'locked',
+    );
+  }
+}
+
+class LearningPath {
+  final String id;
+  final String title;
+  final String description;
+  final int progress;
+  final List<LearningStep> steps;
+
+  LearningPath({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.progress,
+    required this.steps,
+  });
+
+  factory LearningPath.fromJson(Map<String, dynamic> json) {
+    return LearningPath(
+      id: json['_id'] ?? '',
+      title: json['topic'] ?? 'General Path', // Assuming 'topic' is title based on generate body
+      description: json['description'] ?? 'Your personalized roadmap',
+      progress: json['progress'] ?? 0,
+      steps: (json['steps'] as List<dynamic>?)
+              ?.map((e) => LearningStep.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class InterventionAction {
+  final String id;
+  final String title;
+  final String description;
+  final String status;
+
+  InterventionAction({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.status,
+  });
+
+  factory InterventionAction.fromJson(Map<String, dynamic> json) {
+    // Map 'type' to title if title is missing, and handle description
+    String displayTitle = json['title'] ?? json['type']?.toString().replaceAll('_', ' ').toUpperCase() ?? 'ACTION';
+    
+    return InterventionAction(
+      id: json['_id'] ?? json['id'] ?? '',
+      title: displayTitle,
+      description: json['description'] ?? '',
+      status: json['status'] ?? 'pending',
+    );
+  }
+}
+
+class InterventionData {
+  final bool interventionRequired;
+  final String priority;
+  final String owner;
+  final List<InterventionAction> actions;
+  final int daysUntilReview;
+  final int pendingActions;
+
+  InterventionData({
+    required this.interventionRequired,
+    required this.priority,
+    required this.owner,
+    required this.actions,
+    required this.daysUntilReview,
+    required this.pendingActions,
+  });
+
+  factory InterventionData.fromJson(Map<String, dynamic> json) {
+    return InterventionData(
+      interventionRequired: json['interventionRequired'] ?? false,
+      priority: json['priority'] ?? 'Low',
+      owner: json['owner'] ?? 'Unknown',
+      actions: (json['actions'] as List<dynamic>?)
+              ?.map((e) => InterventionAction.fromJson(e))
+              .toList() ??
+          [],
+      daysUntilReview: json['daysUntilReview'] ?? 0,
+      pendingActions: json['pendingActions'] ?? 0,
+    );
+  }
+}
