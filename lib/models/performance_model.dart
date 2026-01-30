@@ -136,11 +136,13 @@ class OverviewData {
 class LearningStep {
   final String title;
   final String description;
+  final String content; // Theory or detailed data
   final String status; // 'completed', 'in-progress', 'locked'
 
   LearningStep({
     required this.title,
     required this.description,
+    required this.content,
     required this.status,
   });
 
@@ -148,6 +150,7 @@ class LearningStep {
     return LearningStep(
       title: json['title'] ?? 'Untitled Step',
       description: json['description'] ?? '',
+      content: json['content'] ?? json['theory'] ?? 'Detailed theory and learning materials for this step will appear here. Mastering this concept is key to progressing further in your roadmap.',
       status: json['status'] ?? 'locked',
     );
   }
@@ -169,15 +172,46 @@ class LearningPath {
   });
 
   factory LearningPath.fromJson(Map<String, dynamic> json) {
+    int completedCount = json['completedSteps'] ?? 0;
+    
+    // 1. Flatten all steps from all courses into a single list of raw maps
+    List<dynamic> headers = [];
+    if (json['courses'] != null) {
+      for (var course in json['courses']) {
+         if (course['steps'] != null) {
+           headers.addAll(course['steps']);
+         }
+      }
+    } else if (json['steps'] != null) {
+      headers.addAll(json['steps']);
+    }
+
+    // 2. Map raw data to LearningStep objects with calculated status
+    List<LearningStep> parsedSteps = [];
+    for (int i = 0; i < headers.length; i++) {
+       String derivedStatus;
+       if (i < completedCount) {
+         derivedStatus = 'completed';
+       } else if (i == completedCount) {
+         derivedStatus = 'in-progress';
+       } else {
+         derivedStatus = 'locked';
+       }
+
+       parsedSteps.add(LearningStep(
+         title: headers[i]['title'] ?? 'Untitled Step',
+         description: headers[i]['description'] ?? '',
+         content: headers[i]['content'] ?? headers[i]['theory'] ?? 'Overview of ${headers[i]['title']}: \n\nThis module covers the fundamental concepts and practical applications. Read through the provided materials and complete the exercises to verify your understanding.',
+         status: derivedStatus,
+       ));
+    }
+
     return LearningPath(
       id: json['_id'] ?? '',
-      title: json['topic'] ?? 'General Path', // Assuming 'topic' is title based on generate body
+      title: json['topic'] ?? 'General Path',
       description: json['description'] ?? 'Your personalized roadmap',
       progress: json['progress'] ?? 0,
-      steps: (json['steps'] as List<dynamic>?)
-              ?.map((e) => LearningStep.fromJson(e))
-              .toList() ??
-          [],
+      steps: parsedSteps,
     );
   }
 }

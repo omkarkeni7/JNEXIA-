@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/student_service.dart';
 import '../models/performance_model.dart';
+import 'learning_path_detail_page.dart';
+import '../widgets/analyzing_animation.dart';
 
 class LearningPathPage extends StatefulWidget {
   const LearningPathPage({super.key});
@@ -35,7 +37,6 @@ class _LearningPathPageState extends State<LearningPathPage> {
   }
 
   Future<void> _generatePath() async {
-    // Simple dialog to get topic
     String? topic = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -56,9 +57,11 @@ class _LearningPathPageState extends State<LearningPathPage> {
 
     if (topic != null && topic.isNotEmpty) {
       if (mounted) setState(() => _isLoading = true);
+      // Simulate "Generating" process for animation
+      await Future.delayed(const Duration(seconds: 4)); 
       try {
         await StudentService.generateLearningPath(topic);
-        await _fetchPaths(); // Refresh
+        await _fetchPaths(); 
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
         await _fetchPaths();
@@ -71,7 +74,7 @@ class _LearningPathPageState extends State<LearningPathPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFE3F2FD),
       appBar: AppBar(
-        title: const Text('My Learning Path', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: const Text('My Learning Paths', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -88,40 +91,24 @@ class _LearningPathPageState extends State<LearningPathPage> {
         foregroundColor: Colors.white,
       ),
       body: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Colors.black))
+        ? const AnalyzingAnimation(
+            messages: [
+              "Parsing Topic...",
+              "Generating Roadmap...", 
+              "Structuring Modules...",
+              "Finalizing Path..."
+            ],
+          )
         : SafeArea(
             child: _paths == null || _paths!.isEmpty
               ? _buildEmptyState()
-              : SingleChildScrollView(
+              : ListView.separated(
                   padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                       // Display the first/latest path for now
-                       if (_paths!.isNotEmpty) ...[
-                         _buildHeaderCard(_paths!.first),
-                         const SizedBox(height: 30),
-                         const Text(
-                           'YOUR ROADMAP',
-                           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.2, color: Colors.black54),
-                         ),
-                         const SizedBox(height: 20),
-                         ..._paths!.first.steps.asMap().entries.map((entry) {
-                           return Column(
-                             children: [
-                               _buildPathStep(
-                                 step: entry.key + 1,
-                                 data: entry.value,
-                                 isLast: entry.key == _paths!.first.steps.length - 1,
-                               ),
-                               if (entry.key != _paths!.first.steps.length - 1)
-                                 _buildPathConnector(entry.value.status == 'completed'),
-                             ],
-                           );
-                         }),
-                       ]
-                    ],
-                  ),
+                  itemCount: _paths!.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    return _buildPathCard(_paths![index]);
+                  },
                 ),
           ),
     );
@@ -145,107 +132,63 @@ class _LearningPathPageState extends State<LearningPathPage> {
     );
   }
 
-  Widget _buildHeaderCard(LearningPath path) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [BoxShadow(color: Colors.grey, offset: Offset(6, 6), blurRadius: 0)],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Current Goal', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text(path.title, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF64B5F6),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text('${path.progress}% Completed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                ),
-              ],
-            ),
+  Widget _buildPathCard(LearningPath path) {
+    return GestureDetector(
+      onTap: () async {
+        // Navigate to details page logic
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LearningPathDetailPage(path: path),
           ),
-          const Icon(Icons.flag, color: Colors.white, size: 48),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPathStep({
-    required int step,
-    required LearningStep data,
-    required bool isLast,
-  }) {
-    Color color;
-    IconData icon;
-    bool isCurrent = false;
-
-    if (data.status.toLowerCase() == 'completed') {
-      color = const Color(0xFFA5D6A7); // Green
-      icon = Icons.check_circle;
-    } else if (data.status.toLowerCase() == 'in-progress') {
-      color = const Color(0xFFFFF59D); // Yellow
-      icon = Icons.play_circle_fill;
-      isCurrent = true;
-    } else {
-      color = Colors.grey.shade300;
-      icon = Icons.lock;
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black, width: 2),
-        boxShadow: isCurrent 
-            ? const [BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0)]
-            : [],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.black, width: 2),
-          ),
-          child: Center(
-            child: Text(
-              '$step',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ),
+        );
+        // Refresh when coming back (in case progress changed)
+        _fetchPaths();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.black, width: 2),
+          boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0)],
         ),
-        title: Text(data.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), // Smaller font
-        subtitle: Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(data.description, style: const TextStyle(color: Colors.black87, fontSize: 12)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Chip(
+                  label: Text(path.title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  backgroundColor: Colors.black,
+                ),
+                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              path.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: path.progress / 100,
+              backgroundColor: Colors.grey[200],
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF64B5F6)),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${path.progress}% Completed',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
           ],
         ),
-        trailing: Icon(icon, size: 28, color: Colors.black),
       ),
-    );
-  }
-
-  Widget _buildPathConnector(bool isActive) {
-    return Container(
-      height: 30,
-      width: 4,
-      margin: const EdgeInsets.only(left: 40), // Align with circle center
-      color: isActive ? Colors.black : Colors.grey.shade400,
     );
   }
 }

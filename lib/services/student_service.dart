@@ -58,6 +58,7 @@ class StudentService {
     }
   }
 
+
   static Future<ScoreBreakdown> getScoreBreakdown() async {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
@@ -69,6 +70,9 @@ class StudentService {
         'Accept': 'application/json',
       },
     );
+
+    print('Get Scores Status: ${response.statusCode}');
+    print('Get Scores Body: ${response.body}');
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
@@ -135,7 +139,7 @@ class StudentService {
     if (token == null) throw Exception('No token found');
 
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance/overview'),
+      Uri.parse('$_baseUrl/student/performance'),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -145,7 +149,13 @@ class StudentService {
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       if (json['success'] == true && json['data'] != null) {
-        return OverviewData.fromJson(json['data']);
+         var perf = json['data']['currentPerformance'] ?? {};
+         // Map to OverviewData
+        return OverviewData(
+          riskLevel: perf['riskLevel'] ?? 'Unknown',
+          overallScore: perf['score'] ?? 0,
+          attendance: perf['attendance'] ?? 0,
+        );
       } else {
         throw Exception('Invalid data structure');
       }
@@ -180,12 +190,12 @@ class StudentService {
     }
   }
   
-  static Future<void> generateLearningPath(String topic) async {
+  static Future<LearningPath> generateLearningPath(String topic) async {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
     final response = await http.post(
-      Uri.parse('$_baseUrl/learning'), // Changed from /learning/generate
+      Uri.parse('$_baseUrl/learning/generate'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -195,7 +205,14 @@ class StudentService {
 
     print('Generate Path Response: ${response.statusCode} - ${response.body}'); // Debug log
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final json = jsonDecode(response.body);
+      if (json['success'] == true && json['data'] != null) {
+        return LearningPath.fromJson(json['data']);
+      } else {
+        throw Exception('Invalid data structure');
+      }
+    } else {
       throw Exception('Failed to generate path: ${response.statusCode} ${response.body}');
     }
   }
@@ -279,6 +296,47 @@ class StudentService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update profile: ${response.body}');
+    }
+  }
+  static Future<LearningPath> getLearningPath(String id) async {
+    final token = await AuthService.getToken();
+    if (token == null) throw Exception('No token found');
+
+    final response = await http.get(
+      Uri.parse('$_baseUrl/learning/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json['success'] == true && json['data'] != null) {
+        return LearningPath.fromJson(json['data']);
+      } else {
+        throw Exception('Invalid data structure');
+      }
+    } else {
+      throw Exception('Failed to load learning path details');
+    }
+  }
+
+  static Future<void> updateLearningProgress(String learningPathId, int completedSteps) async {
+    final token = await AuthService.getToken();
+    if (token == null) throw Exception('No token found');
+
+    final response = await http.put(
+      Uri.parse('$_baseUrl/learning/$learningPathId/progress'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'completedSteps': completedSteps}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update progress');
     }
   }
 }

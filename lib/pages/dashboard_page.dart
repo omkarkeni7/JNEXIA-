@@ -80,14 +80,18 @@ class _DashboardPageState extends State<DashboardPage> {
     Color riskIconColor = Colors.grey;
 
     if (!_isLoading && _riskData != null) {
-      if (_riskData!.isAtRisk) {
+      bool isHighRisk = _riskData!.isAtRisk || 
+                        _riskData!.riskLevel.toLowerCase() == 'high' || 
+                        _riskData!.riskLevel.toLowerCase() == 'critical';
+
+      if (isHighRisk) {
         riskColor = const Color(0xFFFFCDD2); // Red for High Risk
         riskText = 'Risk: ${_riskData!.riskLevel}';
         riskIcon = Icons.warning;
         riskIconColor = Colors.red;
       } else {
         riskColor = const Color(0xFFA8E6D5); // Mint for Safe
-        riskText = 'Risk: Safe'; // Or display level if Low
+        riskText = 'Risk: ${_riskData!.riskLevel == "Unknown" ? "Safe" : _riskData!.riskLevel}';
         riskIcon = Icons.check;
         riskIconColor = Colors.green;
       }
@@ -109,10 +113,27 @@ class _DashboardPageState extends State<DashboardPage> {
                   // Avatar
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
+                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const ProfilePage()),
-                      ).then((_) => _fetchRiskData()); // Refresh on return
+                      ).then((result) {
+                        if (mounted) {
+                           // If we got a result back, it's the new avatar URL
+                           if (result != null && result is String && _profile != null) {
+                             setState(() {
+                               _profile = StudentProfile(
+                                 name: _profile!.name,
+                                 email: _profile!.email,
+                                 studentId: _profile!.studentId,
+                                 language: _profile!.language,
+                                 avatarUrl: result,
+                               );
+                             });
+                           }
+                           // Do NOT fetch fresh data to avoid overwriting the local change
+                           // _fetchRiskData(); 
+                        }
+                      });
                     },
                     child: Container(
                       width: 60,
@@ -122,7 +143,14 @@ class _DashboardPageState extends State<DashboardPage> {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.black, width: 2),
                         image: DecorationImage(
-                          image: NetworkImage(_profile?.avatarUrl ?? 'https://api.dicebear.com/7.x/avataaars/png?seed=Felix'),
+                          onError: (exception, stackTrace) {
+                            print('Error loading avatar: $exception');
+                          },
+                          image: NetworkImage(
+                            (_profile?.avatarUrl != null && _profile!.avatarUrl.isNotEmpty) 
+                                ? _profile!.avatarUrl 
+                                : 'https://api.dicebear.com/7.x/avataaars/png?seed=Felix'
+                          ),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -130,22 +158,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
 
                   // App Title
-                  Text(
-                    'RAKESH JR',
-                    style: GoogleFonts.pressStart2p( // Pixel/Retro font
-                      textStyle: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black, 
-                        shadows: [
-                          Shadow( // 3D effect
-                            offset: Offset(2, 2),
-                            color: Colors.grey,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // App Title Removed
+                  const Spacer(),
                 ],
               ),
             ),
@@ -192,12 +206,15 @@ class _DashboardPageState extends State<DashboardPage> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  riskText,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                                Flexible(
+                                  child: Text(
+                                    riskText,
+                                    style: const TextStyle(
+                                      fontSize: 14, // Slightly reduced to fit
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 Container(
@@ -221,8 +238,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 16),
 
                     // Overall Score Card
+                    // Overall Score Card
                     OverallScoreCard(
-                      overallScore: _overviewData?.overallScore ?? 0,
+                      overallScore: _scoreData?.overallScore ?? _overviewData?.overallScore ?? 0,
                       breakdown: _scoreData,
                     ),
                     const SizedBox(height: 16),
@@ -370,7 +388,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 20), // Reduced space
+                  const SizedBox(height: 20), 
                   ],
                 ),
               ),
@@ -394,7 +412,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Expanded(child: _buildNavItem(context, Icons.chat_bubble_outline, 'Chatbot', false, isChat: true)),
             Expanded(child: _buildNavItem(context, Icons.map, 'Learning Path', false, isPath: true)), 
             Expanded(child: _buildNavItem(context, Icons.home, 'Home', true)),
-            Expanded(child: _buildNavItem(context, Icons.bar_chart, 'My Progress', false, isProgress: true)),
+            Expanded(child: _buildNavItem(context, Icons.bar_chart, 'Performance', false, isProgress: true)),
             Expanded(child: _buildNavItem(context, Icons.person_outline, 'Profile', false)),
           ],
         ),

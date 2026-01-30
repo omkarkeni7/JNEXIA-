@@ -21,24 +21,10 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isSaving = false;
   String? _selectedAvatarUrl;
 
-  final Map<String, List<String>> _avatarOptions = {
-    'Male': [
-      'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
-      'https://api.dicebear.com/7.x/avataaars/png?seed=Jack',
-      'https://api.dicebear.com/7.x/avataaars/png?seed=Jude',
-    ],
-    'Female': [
-      'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
-      'https://api.dicebear.com/7.x/avataaars/png?seed=Mila',
-      'https://api.dicebear.com/7.x/avataaars/png?seed=Zoe',
-    ],
-    'Heroes': [
-      'https://api.dicebear.com/7.x/adventurer/png?seed=Batman',
-      'https://api.dicebear.com/7.x/adventurer/png?seed=Superman',
-      'https://api.dicebear.com/7.x/adventurer/png?seed=WonderWoman',
-      'https://api.dicebear.com/7.x/adventurer/png?seed=Spiderman',
-    ],
-  };
+  final List<String> _avatarOptions = [
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
+  ];
 
   @override
   void initState() {
@@ -81,10 +67,12 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isSaving = true);
     
     try {
+      final newAvatar = _selectedAvatarUrl ?? _profile!.avatarUrl;
+      
       await StudentService.updateProfile(
         _nameController.text,
         _languageController.text,
-        _selectedAvatarUrl ?? _profile!.avatarUrl,
+        newAvatar,
       );
       
       if (mounted) {
@@ -94,19 +82,19 @@ class _ProfilePageState extends State<ProfilePage> {
             backgroundColor: Colors.green,
           ),
         );
+        // Return the new avatar URL to the previous screen
+        Navigator.pop(context, newAvatar);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
+           SnackBar(content: Text('Error updating profile: $e')),
         );
-      }
-    } finally {
-      if (mounted) {
         setState(() => _isSaving = false);
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -282,40 +270,37 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 80,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              ..._avatarOptions.entries.expand((entry) {
-                return entry.value.map((url) => GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedAvatarUrl = url;
-                    });
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _selectedAvatarUrl == url ? Colors.black : Colors.transparent, 
-                        width: 3
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(4), // Padding for border
-                    child: CircleAvatar(
-                      backgroundColor: Colors.grey[200],
-                      backgroundImage: NetworkImage(url),
-                    ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: _avatarOptions.map((url) {
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedAvatarUrl = url;
+                });
+              },
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _selectedAvatarUrl == url ? Colors.black : Colors.transparent, 
+                    width: 3
                   ),
-                ));
-              }),
-            ],
-          ),
+                  boxShadow: _selectedAvatarUrl == url ? [
+                    const BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)
+                  ] : [],
+                ),
+                padding: const EdgeInsets.all(4),
+                child: CircleAvatar(
+                  backgroundColor: Colors.grey[200],
+                  backgroundImage: NetworkImage(url),
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
