@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class AIService {
   // Integreted Keys (As provided)
   static const String mistralApiKey = 'J8puXD4IdLfYqAeVCJbFaqlM8OszNg65';
-  static const String elevenLabsApiKey = 'sk_26a1bad01958c835b788dd88ac1c4c12438d856fefeae2ed';
+  static const String elevenLabsApiKey = 'sk_637c593411cce03d58c732b2d58c59b45d152e9a7d934c70';
   
   // Voice ID for "Adam" (Male - Standard)
   static const String elevenLabsVoiceId = 'pNInz6obpgDQGcFmaJgB'; 
@@ -15,16 +15,20 @@ class AIService {
       final url = Uri.parse('https://api.mistral.ai/v1/chat/completions');
       
       // Prompt engineering for mentorship context
-      String systemPrompt = "You are a helpful and knowledgeable teacher named Deepak. You are mentoring a student.";
+      String languageName = (language == 'hi-IN') ? "Hindi" : (language == 'mr-IN' ? "Marathi" : "English");
+      
+      String systemPrompt = """You are a helpful and knowledgeable teacher named Deepak. You are mentoring a student.
+      
+      CRITICAL INSTRUCTIONS:
+      1. ALWAYS reply in $languageName. Use perfect grammar and natural phrasing.
+      2. If the user asks a general knowledge or academic question (e.g., about math, science, history), answer it accurately and concisely.
+      3. Use the provided STUDENT DATA ONLY if the user asks something personal about themselves (like their name, marks, or performance).
+      4. Keep answers under 3 sentences.
+      """;
       
       if (studentContext != null) {
-        systemPrompt += "\n\nHERE IS THE STUDENT'S DATA. USE THIS TO ANSWER QUESTIONS ABOUT THEM:\n$studentContext\n\nIf asked 'what is my name', use the Name field from above. Keep answers concise (under 2 sentences) and encouraging.";
-      } else {
-        systemPrompt += " Keep answers concise (under 2 sentences) and encouraging.";
+        systemPrompt += "\n\nSTUDENT DATA (Use only if relevant to the question):\n$studentContext";
       }
-
-      if (language == 'hi-IN') systemPrompt += " Reply in Hindi.";
-      else if (language == 'mr-IN') systemPrompt += " Reply in Marathi.";
 
       final response = await http.post(
         url,
@@ -33,12 +37,12 @@ class AIService {
           'Authorization': 'Bearer $mistralApiKey',
         },
         body: jsonEncode({
-          "model": "mistral-tiny",
+          "model": "mistral-small-latest",
           "messages": [
             {"role": "system", "content": systemPrompt},
             {"role": "user", "content": userInput}
           ],
-          "max_tokens": 100,
+          "max_tokens": 200,
         }),
       );
 

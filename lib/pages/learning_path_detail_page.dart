@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/performance_model.dart';
 import '../services/student_service.dart';
 import '../widgets/celebration_overlay.dart';
+import '../widgets/roadmap_completion_overlay.dart';
 
 class LearningPathDetailPage extends StatefulWidget {
   final LearningPath path;
@@ -18,6 +19,7 @@ class _LearningPathDetailPageState extends State<LearningPathDetailPage> {
   bool _isStepUpdating = false; // Specific step updating
   int? _expandedStepIndex; // Track expanded step
   bool _showCelebration = false;
+  bool _showFinalCelebration = false;
 
   @override
   void initState() {
@@ -37,11 +39,16 @@ class _LearningPathDetailPageState extends State<LearningPathDetailPage> {
       // Fetch updated path silently
       final updatedPath = await StudentService.getLearningPath(pathId);
       
+      bool isFinalStep = completedSteps >= _path.steps.length;
+
       if (mounted) {
         setState(() {
           _path = updatedPath;
           _isStepUpdating = false;
           _expandedStepIndex = null; // Collapse after update
+          if (isFinalStep) {
+            _showFinalCelebration = true;
+          }
         });
       }
     } catch (e) {
@@ -108,6 +115,15 @@ class _LearningPathDetailPageState extends State<LearningPathDetailPage> {
                  if (mounted) setState(() => _showCelebration = false);
                },
              ),
+             
+          if (_showFinalCelebration)
+            RoadmapCompletionOverlay(
+              earnedPoints: 50, // Standard reward
+              badgeName: "${_path.title} Master",
+              onFinished: () {
+                if (mounted) setState(() => _showFinalCelebration = false);
+              },
+            ),
         ],
       ),
     );

@@ -11,8 +11,10 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/performance?t=${DateTime.now().millisecondsSinceEpoch}';
+    print('Fetching Performance: $url');
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -38,8 +40,10 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/performance/risk?t=${DateTime.now().millisecondsSinceEpoch}';
+    print('Fetching Risk: $url');
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance/risk'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -48,6 +52,7 @@ class StudentService {
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
+      print('Risk Response: ${response.body}');
       if (json['success'] == true && json['data'] != null) {
         return RiskData.fromJson(json['data']);
       } else {
@@ -63,8 +68,10 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/performance/scores?t=${DateTime.now().millisecondsSinceEpoch}';
+    print('Fetching Scores: $url');
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance/scores'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -90,8 +97,9 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/performance/trends?t=${DateTime.now().millisecondsSinceEpoch}';
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance/trends'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -114,8 +122,9 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/performance/recommendations?t=${DateTime.now().millisecondsSinceEpoch}';
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance/recommendations'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -138,8 +147,10 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/performance?t=${DateTime.now().millisecondsSinceEpoch}';
+    print('Fetching Overview: $url');
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -148,14 +159,10 @@ class StudentService {
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
+      print('Overview Response: ${response.body}');
       if (json['success'] == true && json['data'] != null) {
          var perf = json['data']['currentPerformance'] ?? {};
-         // Map to OverviewData
-        return OverviewData(
-          riskLevel: perf['riskLevel'] ?? 'Unknown',
-          overallScore: perf['score'] ?? 0,
-          attendance: perf['attendance'] ?? 0,
-        );
+         return OverviewData.fromJson(perf);
       } else {
         throw Exception('Invalid data structure');
       }
@@ -168,8 +175,9 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/learning?t=${DateTime.now().millisecondsSinceEpoch}';
     final response = await http.get(
-      Uri.parse('$_baseUrl/learning'), 
+      Uri.parse(url), 
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -221,8 +229,10 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/performance/intervention?t=${DateTime.now().millisecondsSinceEpoch}';
+    print('Fetching Intervention: $url');
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/performance/intervention'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -248,8 +258,10 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/profile?t=${DateTime.now().millisecondsSinceEpoch}';
+    print('Fetching Profile: $url');
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/profile'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -302,8 +314,9 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/learning/$id?t=${DateTime.now().millisecondsSinceEpoch}';
     final response = await http.get(
-      Uri.parse('$_baseUrl/learning/$id'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -311,7 +324,7 @@ class StudentService {
     );
 
     if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
+       final json = jsonDecode(response.body);
       if (json['success'] == true && json['data'] != null) {
         return LearningPath.fromJson(json['data']);
       } else {
@@ -344,8 +357,9 @@ class StudentService {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
+    final url = '$_baseUrl/student/full-data?t=${DateTime.now().millisecondsSinceEpoch}';
     final response = await http.get(
-      Uri.parse('$_baseUrl/student/full-data'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',

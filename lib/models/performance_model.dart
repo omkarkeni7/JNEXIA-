@@ -17,12 +17,12 @@ class PerformanceData {
 
   factory PerformanceData.fromJson(Map<String, dynamic> json) {
     return PerformanceData(
-      score: json['score'] ?? 0,
-      riskLevel: json['riskLevel'] ?? 'Unknown',
-      trends: json['trends'] ?? 'Stable',
+      score: (double.tryParse((json['score'] ?? json['overallScore'] ?? 0).toString()) ?? 0).toInt(),
+      riskLevel: json['riskLevel']?.toString() ?? 'Unknown',
+      trends: json['trends']?.toString() ?? 'Stable',
       recommendations: List<String>.from(json['recommendations'] ?? []),
-      attendance: json['attendance'] ?? 0,
-      internalMarks: json['internalMarks'] ?? 0,
+      attendance: (double.tryParse((json['attendance'] ?? 0).toString()) ?? 0).toInt(),
+      internalMarks: (double.tryParse((json['internalMarks'] ?? 0).toString()) ?? 0).toInt(),
     );
   }
 }
@@ -64,11 +64,11 @@ class ScoreBreakdown {
 
   factory ScoreBreakdown.fromJson(Map<String, dynamic> json) {
     return ScoreBreakdown(
-      attendance: json['attendance'] ?? 0,
-      internalMarks: json['internalMarks'] ?? 0,
-      assignmentScore: json['assignmentScore'] ?? 0,
-      overallScore: json['overallScore'] ?? 0,
-      lmsEngagement: json['lmsEngagement'] ?? 0,
+      attendance: (double.tryParse((json['attendance'] ?? 0).toString()) ?? 0).toInt(),
+      internalMarks: (double.tryParse((json['internalMarks'] ?? 0).toString()) ?? 0).toInt(),
+      assignmentScore: (double.tryParse((json['assignmentScore'] ?? 0).toString()) ?? 0).toInt(),
+      overallScore: (double.tryParse((json['overallScore'] ?? json['score'] ?? 0).toString()) ?? 0).toInt(),
+      lmsEngagement: (double.tryParse((json['lmsEngagement'] ?? 0).toString()) ?? 0).toInt(),
     );
   }
 }
@@ -126,9 +126,9 @@ class OverviewData {
 
   factory OverviewData.fromJson(Map<String, dynamic> json) {
     return OverviewData(
-      riskLevel: json['riskLevel'] ?? 'Unknown',
-      overallScore: json['overallScore'] ?? 0,
-      attendance: json['attendance'] ?? 0,
+      riskLevel: json['riskLevel']?.toString() ?? 'Unknown',
+      overallScore: (double.tryParse((json['overallScore'] ?? json['score'] ?? 0).toString()) ?? 0).toInt(),
+      attendance: (double.tryParse((json['attendance'] ?? 0).toString()) ?? 0).toInt(),
     );
   }
 }
@@ -206,12 +206,15 @@ class LearningPath {
        ));
     }
 
+    // Limit to 6 steps for better user engagement
+    final limitedSteps = parsedSteps.take(6).toList();
+
     return LearningPath(
       id: json['_id'] ?? '',
       title: json['topic'] ?? 'General Path',
       description: json['description'] ?? 'Your personalized roadmap',
       progress: json['progress'] ?? 0,
-      steps: parsedSteps,
+      steps: limitedSteps,
     );
   }
 }

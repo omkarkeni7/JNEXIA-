@@ -14,6 +14,8 @@ class LearningPathPage extends StatefulWidget {
 class _LearningPathPageState extends State<LearningPathPage> {
   List<LearningPath>? _paths;
   bool _isLoading = true;
+  int _badgeCount = 0;
+  List<String> _completedRoadmaps = [];
 
   @override
   void initState() {
@@ -28,6 +30,10 @@ class _LearningPathPageState extends State<LearningPathPage> {
         setState(() {
           _paths = paths;
           _isLoading = false;
+          // Robust badge detection: Progress >= 90% or all steps completed
+          final completed = paths.where((p) => p.progress >= 95 || p.steps.every((s) => s.status == 'completed')).toList();
+          _badgeCount = completed.length;
+          _completedRoadmaps = completed.map((p) => p.title).toList();
         });
       }
     } catch (e) {
@@ -100,17 +106,119 @@ class _LearningPathPageState extends State<LearningPathPage> {
             ],
           )
         : SafeArea(
-            child: _paths == null || _paths!.isEmpty
-              ? _buildEmptyState()
-              : ListView.separated(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _paths!.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    return _buildPathCard(_paths![index]);
-                  },
+            child: Column(
+              children: [
+                if (_paths != null && _paths!.isNotEmpty) _buildBadgeHeader(),
+                Expanded(
+                  child: _paths == null || _paths!.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                        itemCount: _paths!.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          return _buildPathCard(_paths![index]);
+                        },
+                      ),
                 ),
+              ],
+            ),
           ),
+    );
+  }
+
+  Widget _buildBadgeHeader() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF40FFA7),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black, width: 2),
+        boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "ACHIEVEMENTS",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "$_badgeCount Badges Earned",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.stars, color: Color(0xFF40FFA7), size: 24),
+                ),
+              ],
+            ),
+          ),
+
+          // Collection Row
+          if (_completedRoadmaps.isNotEmpty)
+            Container(
+              height: 70,
+              padding: const EdgeInsets.only(bottom: 20),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _completedRoadmaps.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.black, width: 2),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.verified, color: Color(0xFF40FFA7), size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          _completedRoadmaps[index],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 

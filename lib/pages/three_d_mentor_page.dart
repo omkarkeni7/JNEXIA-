@@ -93,43 +93,56 @@ class _ThreeDMentorPageState extends State<ThreeDMentorPage> {
 
   void _listen() async {
     if (!_isListening) {
-      // Stop any current audio
-      await _audioPlayer.stop();
-      
+      // 1. Ensure plugin is initialized before listening
       bool available = await _speech.initialize(
         onStatus: (val) {
-          print('onStatus: $val');
+          print('STT Status: $val');
           if (val == 'done' || val == 'notListening') {
-             if (mounted) setState(() => _isListening = false);
+            if (mounted) setState(() => _isListening = false);
           }
         },
         onError: (val) {
-           print('onError: $val');
-           if (mounted) setState(() => _isListening = false);
+          print('STT Error: ${val.errorMsg}');
+          if (mounted) {
+            setState(() => _isListening = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Speech Error: ${val.errorMsg}")),
+            );
+          }
         },
       );
+
       if (available) {
+        // Stop any current audio
+        await _audioPlayer.stop();
+        
         setState(() => _isListening = true);
+        
         _speech.listen(
           onResult: (val) {
             setState(() {
               _text = val.recognizedWords;
             });
-            if (val.hasConfidenceRating && val.confidence > 0) {
-              if (!_speech.isListening) {
-                 _processResponse(_text);
-              }
+            // 2. Only process if it's the final result or confidence is high enough
+            if (val.finalResult) {
+              _processResponse(val.recognizedWords);
             }
           },
           localeId: _selectedLanguage,
+          listenMode: stt.ListenMode.dictation, // Better for general conversation
+          cancelOnError: true,
+          partialResults: true,
         );
+      } else {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Speech recognition not available on this device.")),
+           );
+        }
       }
     } else {
       setState(() => _isListening = false);
       _speech.stop();
-      if (_text.isNotEmpty && _text != "Press the mic and ask me anything!") {
-        _processResponse(_text);
-      }
     }
   }
 
@@ -213,6 +226,10 @@ class _ThreeDMentorPageState extends State<ThreeDMentorPage> {
               cameraControls: true,
               backgroundColor: Colors.transparent,
               disableZoom: false,
+              // Prevention of upside down rotation
+              // theta (horizontal), phi (vertical), radius (zoom)
+              minCameraOrbit: 'auto 0deg auto', // Prevents looking from above
+              maxCameraOrbit: 'auto 90deg auto', // Prevents looking from below ground
               // Animate 'Talk' when speaking (audio playing) OR processing (thinking)
               animationName: _isSpeaking ? 'Talk' : 'Idle',
               autoPlay: true,

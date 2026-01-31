@@ -43,18 +43,22 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _fetchRiskData() async {
     try {
-      final risk = await StudentService.getRiskStatus();
-      final scores = await StudentService.getScoreBreakdown();
-      final overview = await StudentService.getOverview();
-      final intervention = await StudentService.getIntervention();
-      final profile = await StudentService.getProfile();
+      // Fetch all data concurrently
+      final results = await Future.wait([
+        StudentService.getRiskStatus(),
+        StudentService.getScoreBreakdown(),
+        StudentService.getOverview(),
+        StudentService.getIntervention(),
+        StudentService.getProfile(),
+      ]);
+
       if (mounted) {
         setState(() {
-          _riskData = risk;
-          _scoreData = scores;
-          _overviewData = overview;
-          _interventionData = intervention;
-      _profile = profile;
+          _riskData = results[0] as RiskData;
+          _scoreData = results[1] as ScoreBreakdown;
+          _overviewData = results[2] as OverviewData;
+          _interventionData = results[3] as InterventionData;
+          _profile = results[4] as StudentProfile;
           _isLoading = false;
         });
       }
@@ -62,7 +66,7 @@ class _DashboardPageState extends State<DashboardPage> {
       print('Error fetching dashboard data: $e');
       if (mounted) {
         setState(() {
-          _isLoading = false; // Still stop loading on error
+          _isLoading = false; 
         });
       }
     }
@@ -80,23 +84,24 @@ class _DashboardPageState extends State<DashboardPage> {
     IconData riskIcon = Icons.hourglass_empty;
     Color riskIconColor = Colors.grey;
 
-    if (!_isLoading && _riskData != null) {
-      bool isHighRisk = _riskData!.isAtRisk || 
-                        _riskData!.riskLevel.toLowerCase() == 'high' || 
-                        _riskData!.riskLevel.toLowerCase() == 'critical';
+    if (!_isLoading && (_riskData != null || _overviewData != null)) {
+      String level = _riskData?.riskLevel ?? _overviewData?.riskLevel ?? 'Unknown';
+      bool isHighRisk = (_riskData?.isAtRisk ?? false) || 
+                        level.toLowerCase() == 'high' || 
+                        level.toLowerCase() == 'critical';
 
       if (isHighRisk) {
         riskColor = const Color(0xFFFFCDD2); // Red for High Risk
-        riskText = 'Risk: ${_riskData!.riskLevel}';
+        riskText = 'Risk: $level';
         riskIcon = Icons.warning;
         riskIconColor = Colors.red;
       } else {
         riskColor = const Color(0xFFA8E6D5); // Mint for Safe
-        riskText = 'Risk: ${_riskData!.riskLevel == "Unknown" ? "Safe" : _riskData!.riskLevel}';
+        riskText = 'Risk: ${level == "Unknown" ? "Safe" : level}';
         riskIcon = Icons.check;
         riskIconColor = Colors.green;
       }
-    } else if (!_isLoading && _riskData == null) {
+    } else if (!_isLoading && _riskData == null && _overviewData == null) {
        riskText = 'Risk: Unknown';
     }
 
@@ -162,6 +167,33 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
 
                   const Spacer(),
+                  
+                  // Refresh Button
+                  GestureDetector(
+                    onTap: () => _fetchRiskData(),
+                    child: Container(
+                       padding: const EdgeInsets.all(8),
+                       decoration: BoxDecoration(
+                         color: Colors.white,
+                         shape: BoxShape.circle,
+                         border: Border.all(color: Colors.black, width: 2),
+                         boxShadow: const [
+                           BoxShadow(
+                             color: Colors.black,
+                             offset: Offset(2, 2),
+                             blurRadius: 0,
+                           ),
+                         ],
+                       ),
+                       child: const Icon(
+                         Icons.refresh, 
+                         color: Colors.black,
+                         size: 24,
+                       ),
+                     ),
+                   ),
+                  
+                  const SizedBox(width: 12),
 
                   // Chatbot Button (Moved here)
                   GestureDetector(
@@ -198,8 +230,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
             // Scrollable content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: RefreshIndicator(
+                onRefresh: () => _fetchRiskData(),
+                color: Colors.black,
+                backgroundColor: Colors.white,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
                     // Attendance and LMS Engagement Row
@@ -215,7 +252,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         Expanded(
                           child: AttendanceCard(
                             title: 'Attendance',
-                            value: '${_scoreData?.attendance ?? 0}%',
+                            value: '${(_scoreData?.attendance ?? 0) > 0 ? _scoreData!.attendance : (_overviewData?.attendance ?? 0)}%',
                             color: const Color(0xFFFFD54F),
                           ),
                         ),
@@ -272,7 +309,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     // Overall Score Card
                     // Overall Score Card
                     OverallScoreCard(
-                      overallScore: _scoreData?.overallScore ?? _overviewData?.overallScore ?? 0,
+                      overallScore: (_scoreData?.overallScore ?? 0) > 0 
+                          ? _scoreData!.overallScore 
+                          : (_overviewData?.overallScore ?? 0),
                       breakdown: _scoreData,
                     ),
                     const SizedBox(height: 16),
@@ -425,9 +464,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    ),
 
       // Bottom Navigation Bar
       bottomNavigationBar: Container(
