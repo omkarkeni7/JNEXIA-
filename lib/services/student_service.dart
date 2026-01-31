@@ -274,7 +274,7 @@ class StudentService {
     }
   }
 
-  static Future<void> updateProfile(String name, String language, String avatarUrl) async {
+  static Future<void> updateProfile(String name, String language, String classes) async {
     final token = await AuthService.getToken();
     if (token == null) throw Exception('No token found');
 
@@ -287,7 +287,7 @@ class StudentService {
       body: jsonEncode({
         'name': name,
         'language': language,
-        'avatar': avatarUrl,
+        'classes': classes,
       }),
     );
 
@@ -337,6 +337,32 @@ class StudentService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update progress');
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchFullStudentData() async {
+    final token = await AuthService.getToken();
+    if (token == null) throw Exception('No token found');
+
+    final response = await http.get(
+      Uri.parse('$_baseUrl/student/full-data'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    print('Fetch Full Data Status: ${response.statusCode}');
+    
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json['success'] == true && json['data'] != null) {
+        return json['data'];
+      } else {
+        throw Exception('Invalid data structure');
+      }
+    } else {
+      throw Exception('Failed to load full student data');
     }
   }
 }

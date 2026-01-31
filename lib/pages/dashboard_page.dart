@@ -15,6 +15,7 @@ import '../widgets/overall_score_card.dart';
 import '../widgets/subject_marks_card.dart';
 import 'learning_path_page.dart';
 import 'interventions_page.dart';
+import 'three_d_mentor_page.dart';
 
 
 import '../models/student_profile_model.dart';
@@ -127,6 +128,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                  studentId: _profile!.studentId,
                                  language: _profile!.language,
                                  avatarUrl: result,
+                                 instituteName: _profile!.instituteName,
+                                 classes: _profile!.classes,
+                                 course: _profile!.course,
                                );
                              });
                            }
@@ -157,9 +161,37 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
 
-                  // App Title
-                  // App Title Removed
                   const Spacer(),
+
+                  // Chatbot Button (Moved here)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChatbotPage()),
+                      );
+                    },
+                    child: Container(
+                       padding: const EdgeInsets.all(12),
+                       decoration: BoxDecoration(
+                         color: Colors.white,
+                         shape: BoxShape.circle,
+                         border: Border.all(color: Colors.black, width: 2),
+                         boxShadow: const [
+                           BoxShadow(
+                             color: Colors.black,
+                             offset: Offset(2, 2),
+                             blurRadius: 0,
+                           ),
+                         ],
+                       ),
+                       child: const Icon(
+                         Icons.smart_toy, // Unique AI/Chatbot icon
+                         color: Colors.black,
+                         size: 28,
+                       ),
+                     ),
+                   ),
                 ],
               ),
             ),
@@ -409,7 +441,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Expanded(child: _buildNavItem(context, Icons.chat_bubble_outline, 'Chatbot', false, isChat: true)),
+            Expanded(child: _buildNavItem(context, Icons.view_in_ar, '3D Mentor', false, is3DMentor: true)),
             Expanded(child: _buildNavItem(context, Icons.map, 'Learning Path', false, isPath: true)), 
             Expanded(child: _buildNavItem(context, Icons.home, 'Home', true)),
             Expanded(child: _buildNavItem(context, Icons.bar_chart, 'Performance', false, isProgress: true)),
@@ -420,7 +452,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, bool isActive, {bool isProgress = false, bool isPath = false, bool isChat = false}) {
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, bool isActive, {bool isProgress = false, bool isPath = false, bool isChat = false, bool is3DMentor = false}) {
     return GestureDetector(
       onTap: () {
         if (isProgress) {
@@ -439,6 +471,12 @@ class _DashboardPageState extends State<DashboardPage> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const ChatbotPage(),
+            ),
+          );
+        } else if (is3DMentor) {
+           Navigator.of(context).push(
+            MaterialPageRoute(
+               builder: (context) => const ThreeDMentorPage(),
             ),
           );
         } else if (label == 'Profile') {

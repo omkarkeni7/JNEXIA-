@@ -4,6 +4,9 @@ class StudentProfile {
   final String studentId;
   final String language;
   final String avatarUrl;
+  final String instituteName;
+  final String classes;
+  final String course;
   
   StudentProfile({
     required this.name,
@@ -11,6 +14,9 @@ class StudentProfile {
     required this.studentId,
     required this.language,
     required this.avatarUrl,
+    required this.instituteName,
+    required this.classes,
+    required this.course,
   });
 
   factory StudentProfile.fromJson(Map<String, dynamic> json) {
@@ -19,7 +25,11 @@ class StudentProfile {
       email: json['email'] ?? '',
       studentId: json['studentId'] ?? '',
       language: json['language'] ?? 'English',
-      avatarUrl: json['avatar'] ?? 'https://api.dicebear.com/7.x/avataaars/png?seed=Felix', // Default fallback
+      // Using 'avatar' key if it exists, otherwise default. API doesn't mention it but UI uses it.
+      avatarUrl: json['avatar'] ?? 'https://api.dicebear.com/7.x/avataaars/png?seed=Felix', 
+      instituteName: json['instituteName'] ?? '',
+      classes: json['classes'] ?? '',
+      course: json['Course'] ?? '', // Note uppercase 'C' from user JSON
     );
   }
 
@@ -27,7 +37,9 @@ class StudentProfile {
     return {
       'name': name,
       'language': language,
-      'avatar': avatarUrl,
+      'classes': classes,
+      // 'avatar': avatarUrl, // User API spec doesn't explicitly ask for avatar update, but we might keep it or remove it depending on strictness.
+      // Keeping it safe by following user Spec for UPDATE
     };
   }
 }

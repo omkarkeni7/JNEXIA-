@@ -15,22 +15,18 @@ class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _languageController;
+  late TextEditingController _classesController;
   
   StudentProfile? _profile;
   bool _isLoading = true;
   bool _isSaving = false;
-  String? _selectedAvatarUrl;
-
-  final List<String> _avatarOptions = [
-    'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
-    'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
-  ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
     _languageController = TextEditingController();
+    _classesController = TextEditingController();
     _fetchProfile();
   }
 
@@ -38,6 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void dispose() {
     _nameController.dispose();
     _languageController.dispose();
+    _classesController.dispose();
     super.dispose();
   }
 
@@ -48,7 +45,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _profile = profile;
         _nameController.text = profile.name;
         _languageController.text = profile.language;
-        _selectedAvatarUrl = profile.avatarUrl;
+        _classesController.text = profile.classes;
         _isLoading = false;
       });
     } catch (e) {
@@ -67,12 +64,10 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isSaving = true);
     
     try {
-      final newAvatar = _selectedAvatarUrl ?? _profile!.avatarUrl;
-      
       await StudentService.updateProfile(
         _nameController.text,
         _languageController.text,
-        newAvatar,
+        _classesController.text,
       );
       
       if (mounted) {
@@ -82,8 +77,7 @@ class _ProfilePageState extends State<ProfilePage> {
             backgroundColor: Colors.green,
           ),
         );
-        // Return the new avatar URL to the previous screen
-        Navigator.pop(context, newAvatar);
+        setState(() => _isSaving = false);
       }
     } catch (e) {
       if (mounted) {
@@ -127,29 +121,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // Avatar Display
+                      // Avatar Display (Read Only)
                       Center(
                         child: Container(
-                          width: 120,
-                          height: 120,
+                          width: 100,
+                          height: 100,
                           decoration: BoxDecoration(
                             color: Colors.white, 
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.black, width: 3),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black,
-                                offset: Offset(4, 4),
-                                blurRadius: 0,
-                              ),
-                            ],
-                            image: _selectedAvatarUrl != null 
-                              ? DecorationImage(image: NetworkImage(_selectedAvatarUrl!), fit: BoxFit.cover)
-                              : null,
+                            image: DecorationImage(
+                              image: NetworkImage(_profile?.avatarUrl ?? 'https://api.dicebear.com/7.x/avataaars/png?seed=Felix'),
+                              fit: BoxFit.cover
+                            ),
                           ),
-                          child: _selectedAvatarUrl == null 
-                            ? const Icon(Icons.person, size: 60, color: Colors.black) 
-                            : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -161,10 +146,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           color: Colors.black54,
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Avatar Selector
-                      _buildAvatarSelector(),
                       const SizedBox(height: 24),
 
                       // Name Field
@@ -182,12 +163,38 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.language,
                       ),
                       const SizedBox(height: 24),
+
+                       // Classes Field
+                      _buildNeuTextField(
+                        controller: _classesController,
+                        label: 'Class/Year',
+                        icon: Icons.class_outlined,
+                      ),
+                      const SizedBox(height: 24),
                       
                       // Read-only Email
                        _buildNeuTextField(
                         controller: TextEditingController(text: _profile?.email),
                         label: 'Email',
                         icon: Icons.email_outlined,
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Read-only Institute
+                       _buildNeuTextField(
+                        controller: TextEditingController(text: _profile?.instituteName),
+                        label: 'Institute',
+                        icon: Icons.school_outlined,
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Read-only Course
+                       _buildNeuTextField(
+                        controller: TextEditingController(text: _profile?.course),
+                        label: 'Course',
+                        icon: Icons.book_outlined,
                         readOnly: true,
                       ),
                       const SizedBox(height: 40),
@@ -258,51 +265,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
-    );
-  }
-
-  Widget _buildAvatarSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Choose Avatar',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: _avatarOptions.map((url) {
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedAvatarUrl = url;
-                });
-              },
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _selectedAvatarUrl == url ? Colors.black : Colors.transparent, 
-                    width: 3
-                  ),
-                  boxShadow: _selectedAvatarUrl == url ? [
-                    const BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)
-                  ] : [],
-                ),
-                padding: const EdgeInsets.all(4),
-                child: CircleAvatar(
-                  backgroundColor: Colors.grey[200],
-                  backgroundImage: NetworkImage(url),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
     );
   }
 
