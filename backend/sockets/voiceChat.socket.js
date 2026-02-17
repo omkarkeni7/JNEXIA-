@@ -1,5 +1,6 @@
 const speechToTextService = require('../services/speechToText.service');
 const mistralBotService = require('../services/mistralBot.service');
+const geminiTTSService = require('../services/geminiTTS.service');
 const elevenLabsService = require('../services/elevenLabs.service');
 
 /**
@@ -93,17 +94,20 @@ function initializeVoiceChatSocket(io) {
                     }
                 );
 
-                // Step 3: Convert AI response to speech
-                const audioBytes = await elevenLabsService.textToSpeech(aiResponse);
+                // Step 3: Convert AI response to speech (Gemini TTS with fallback)
+                const ttsResult = await convertTextToSpeech(aiResponse);
 
                 // Send complete response to client
                 socket.emit('aiResponse', {
                     transcription: transcription,
                     response: aiResponse,
-                    audio: audioBytes.toString('base64'), // Send as base64
+                    audio: ttsResult.audio.toString('base64'), // Send as base64
+                    voice: ttsResult.voice,
+                    provider: ttsResult.provider,
+                    mimeType: ttsResult.mimeType,
                 });
 
-                console.log(`[Socket] Complete response sent to ${socket.id}`);
+                console.log(`[Socket] Complete response sent to ${socket.id} using ${ttsResult.provider}`);
             } catch (error) {
                 console.error('[Socket] Error processing audio:', error.message);
                 socket.emit('error', { message: `Processing failed: ${error.message}` });
@@ -137,17 +141,20 @@ function initializeVoiceChatSocket(io) {
                     }
                 );
 
-                // Convert to speech
-                const audioBytes = await elevenLabsService.textToSpeech(aiResponse);
+                // Convert to speech (Gemini TTS with fallback)
+                const ttsResult = await convertTextToSpeech(aiResponse);
 
                 // Send response
                 socket.emit('aiResponse', {
                     transcription: message,
                     response: aiResponse,
-                    audio: audioBytes.toString('base64'),
+                    audio: ttsResult.audio.toString('base64'),
+                    voice: ttsResult.voice,
+                    provider: ttsResult.provider,
+                    mimeType: ttsResult.mimeType,
                 });
 
-                console.log(`[Socket] Text response sent to ${socket.id}`);
+                console.log(`[Socket] Text response sent to ${socket.id} using ${ttsResult.provider}`);
             } catch (error) {
                 console.error('[Socket] Error processing text message:', error.message);
                 socket.emit('error', { message: `Processing failed: ${error.message}` });
@@ -201,6 +208,70 @@ function getLanguageName(languageCode) {
     };
 
     return languageMap[languageCode] || 'English';
+}
+
+/**
+ * Convert text to speech with Gemini TTS (primary) and Google Cloud TTS (fallback)
+ * Implements retry logic for Gemini TTS (1 retry on 500 errors)
+ * @param {string} text - Text to convert to speech
+ * @param {object} options - TTS options
+ * @returns {Promise<{audio: Buffer, voice: object, provider: string, mimeType: string}>}
+ */
+async function convertTextToSpeech(text, options = {}) {
+    const voiceName = options.voiceName || process.env.GEMINI_TTS_VOICE || 'Vindemiatrix';
+
+    // Try Gemini TTS (Primary) with retry
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            console.log(`[TTS] Attempt ${attempt}/2: Trying Gemini TTS with voice ${voiceName}...`);
+
+            const audioBuffer = await geminiTTSService.textToSpeech(text, { voiceName });
+
+            return {
+                audio: audioBuffer,
+                voice: {
+                    name: voiceName,
+                    languageCode: 'en-US'
+                },
+                provider: 'gemini-2.5-flash-preview-tts',
+                mimeType: 'audio/wav'
+            };
+
+        } catch (error) {
+            console.error(`[TTS] Gemini TTS attempt ${attempt} failed:`, error.message);
+
+            // Only retry on 500 errors
+            if (attempt === 1 && error.message.includes('500')) {
+                console.log('[TTS] Retrying Gemini TTS in 1 second...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
+
+            // If second attempt fails or non-500 error, break to fallback
+            break;
+        }
+    }
+
+    // Fallback to Google Cloud TTS (ElevenLabs service)
+    try {
+        console.log('[TTS] Falling back to Google Cloud TTS (ElevenLabs)...');
+
+        const audioBuffer = await elevenLabsService.textToSpeech(text);
+
+        return {
+            audio: audioBuffer,
+            voice: {
+                name: 'en-US-Wavenet-F',
+                languageCode: 'en-US'
+            },
+            provider: 'google-cloud-tts',
+            mimeType: 'audio/mpeg'
+        };
+
+    } catch (error) {
+        console.error('[TTS] Google Cloud TTS fallback failed:', error.message);
+        throw new Error('Failed to generate speech audio');
+    }
 }
 
 module.exports = initializeVoiceChatSocket;
