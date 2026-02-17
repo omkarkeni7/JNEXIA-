@@ -30,8 +30,8 @@ class _LearningPathPageState extends State<LearningPathPage> {
         setState(() {
           _paths = paths;
           _isLoading = false;
-          // Robust badge detection: Progress >= 90% or all steps completed
-          final completed = paths.where((p) => p.progress >= 95 || p.steps.every((s) => s.status == 'completed')).toList();
+          // Badge detection: Progress = 100% (all steps completed)
+          final completed = paths.where((p) => p.progress >= 100).toList();
           _badgeCount = completed.length;
           _completedRoadmaps = completed.map((p) => p.title).toList();
         });

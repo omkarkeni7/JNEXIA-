@@ -209,11 +209,20 @@ class LearningPath {
     // Limit to 6 steps for better user engagement
     final limitedSteps = parsedSteps.take(6).toList();
 
+    // Calculate progress based on completed steps
+    // If all limited steps are completed, progress should be 100%
+    int calculatedProgress = 0;
+    if (limitedSteps.isNotEmpty) {
+      calculatedProgress = ((completedCount / limitedSteps.length) * 100).round();
+      // Cap at 100%
+      if (calculatedProgress > 100) calculatedProgress = 100;
+    }
+
     return LearningPath(
       id: json['_id'] ?? '',
       title: json['topic'] ?? 'General Path',
       description: json['description'] ?? 'Your personalized roadmap',
-      progress: json['progress'] ?? 0,
+      progress: calculatedProgress,
       steps: limitedSteps,
     );
   }
