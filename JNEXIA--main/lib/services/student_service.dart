@@ -379,4 +379,30 @@ class StudentService {
       throw Exception('Failed to load full student data');
     }
   }
+
+  /// Delete a learning path by ID
+  static Future<void> deleteLearningPath(String learningPathId) async {
+    final token = await AuthService.getToken();
+    if (token == null) throw Exception('No token found');
+
+    final url = '$_baseUrl/learning/$learningPathId';
+    print('Deleting Learning Path: $url');
+    
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    print('Delete Learning Path Status: ${response.statusCode}');
+    print('Delete Learning Path Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      print('Learning path deleted successfully');
+    } else {
+      throw Exception('Failed to delete learning path: ${response.statusCode}');
+    }
+  }
 }
